@@ -4,9 +4,9 @@ class FileNode:
         self.lines = lines
         self.next_file = next_file
 
-# Replace 'file1.txt', 'file2.txt', etc., with your actual file names
+
 file_names = ['SeedToSoil.txt', 'SoilToFertilizer.txt', 'FertilizerToWater.txt', 'WaterToLight.txt', 'LightToTemp.txt', 'TempToHumidity.txt', 'HumidityToLocation.txt']
-# Initialize the first node
+
 head = None
 current_node = head
 node_value = 0
