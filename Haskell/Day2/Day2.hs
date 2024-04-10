@@ -6,16 +6,7 @@ import Data.Char (isDigit, isAlpha)
 import qualified Data.Maybe
 import Data.Either (fromRight)
 
-data GameData = GameData Int [[(String, Int)]] deriving Show
-
-redMax :: Int
-redMax = 12
-
-greenMax :: Int
-greenMax = 13
-
-blueMax :: Int
-blueMax = 14
+data GameData = GameData Int [(String, Int)] deriving Show
 
 parseFile :: FilePath -> IO [String]
 parseFile filePath = do
@@ -47,15 +38,15 @@ parseGame = do
     char ':'
     spaces
     dataSets <- sepBy parseDataSet (char ';' >> spaces)
-    return (GameData gameNum dataSets)
+    return (GameData gameNum (concat dataSets))
 
-validateDataSet :: [(String, Int)] -> Bool
-validateDataSet [] = True
-validateDataSet ((color, count):xs)
-    | color == "red" && count > redMax = False
-    | color == "green" && count > greenMax = False
-    | color == "blue" && count > blueMax = False
-    | otherwise = validateDataSet xs
+validateDataSet :: (String, Int) -> Bool
+validateDataSet ([], i) = True
+validateDataSet (color, count)
+    | color == "red" && count > 12 = False
+    | color == "green" && count > 13 = False
+    | color == "blue" && count > 14 = False
+    | otherwise = True
 
 validateGame :: GameData -> Maybe Int
 validateGame (GameData gameNum datasets) =
@@ -64,12 +55,7 @@ validateGame (GameData gameNum datasets) =
         else Nothing
 
 calculateSum :: [String] -> Int -> Int
-calculateSum [] n = n
-calculateSum (x:xs) n =
-    let gameResult = parse parseGame "" x
-    in case gameResult of
-        Left err -> error $ "Parse error on " ++ show err
-        Right game -> calculateSum xs (n + Data.Maybe.fromMaybe 0 (validateGame game))
+calculateSum (x:xs) n = foldl (\ n x -> n + Data.Maybe.fromMaybe 0 (validateGame (fromRight (error "error") $ parse parseGame "" x))) n xs
 
 part1 :: FilePath -> IO ()
 part1 filePath = do
@@ -79,31 +65,16 @@ part1 filePath = do
 
 ------------------------------------------------
 
-getMins :: [(String, Int)] -> Int -> Int -> Int -> Int
-getMins [] r g b = r * g * b
-getMins ((color, count):xs) r g b
-    | color == "red" && count > r = getMins xs count g b
-    | color == "green" && count > g = getMins xs r count b
-    | color == "blue" && count > b = getMins xs r g count
-    | otherwise = r * g * b
-
-aggregatePower :: [[(String, Int)]]-> Int -> Maybe Int
-aggregatePower [] n = Nothing
-aggregatePower (x:xs) n =
-    let result = getMins x 0 0 0
-    in
-        aggregatePower xs (n + result)
+getMins :: [(String, Int)] -> (Int, Int, Int) -> Int
+getMins [] (r, g, b) = r * g * b
+getMins ((color, count):xs) (r, g, b)
+    | color == "red" && count > r = getMins xs (count, g, b)
+    | color == "green" && count > g = getMins xs (r, count, b)
+    | color == "blue" && count > b = getMins xs (r, g, count)
+    | otherwise = getMins xs (r, g, b)
 
 calculatePower :: [String] -> Int -> Int
-calculatePower [] n = n
-calculatePower (x:xs) n =
-    let gameResult = parse parseGame "" x
-        gameData = fromRight (error "failed to parse") gameResult
-        datasets = case gameData of
-                     GameData _ ds -> ds
-    in
-        calculatePower xs (n + Data.Maybe.fromMaybe 0 (aggregatePower datasets 1))
-
+calculatePower xs n = foldl (\ n x -> getMins (case fromRight (error "failed to parse") $ parse parseGame "" x of GameData _ ds -> ds) (0, 0, 0) + n) n xs
 
 part2 :: FilePath -> IO ()
 part2 filePath = do
