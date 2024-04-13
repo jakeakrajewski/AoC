@@ -32,7 +32,7 @@ checkPath grid ((row, column):xs) start lastPosition =
                 Just change -> Just (row, column)
                 Nothing -> checkPath grid xs start lastPosition
         else
-            checkPath grid xs start lastPosition  -- Skip the current position and move to the next one
+            checkPath grid xs start lastPosition
     where
         end = grid !! row !! column
 
