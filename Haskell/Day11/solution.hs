@@ -1,7 +1,7 @@
 import System.IO ( hGetContents, withFile, IOMode(ReadMode), nativeNewline )
 import Data.Char (isDigit, isAlpha)
 import Data.Graph (path)
-import Data.List (find)
+import Data.List (find, tails)
 import System.Posix.Internals (lstat)
 
 parseFile :: FilePath -> IO [String]
@@ -9,8 +9,6 @@ parseFile filePath = withFile filePath ReadMode $ \fileHandle -> do
   contents <- hGetContents fileHandle
   let linesOfFile = lines contents
   length linesOfFile `seq` return linesOfFile
-
-
 
 isTupleInList :: Eq a => (a, a) -> [(a, a)] -> Bool
 isTupleInList = elem
@@ -28,50 +26,48 @@ findGalaxies (row:rows) (r, c) lst = findGalaxies rows (r + 1, c) (searchLine ro
 distance :: (Int, Int) -> (Int, Int) -> Int
 distance (x1, y1) (x2, y2) = abs (x2 - x1) + abs (y2 - y1)
 
-emptyRows :: [(Int, Int)] -> Int -> Int -> [Int]  -> [Int]
-emptyRows points h n res
+emptyRows :: [String] -> Int -> Int -> [Int]  -> [Int]
+emptyRows grid h n res
     | n >= h = res
-    | not (any (\(r, c) -> r == n) points) = emptyRows points h (n + 1) (res ++ [n])
-    | otherwise = emptyRows points h (n + 1) res
+    | '#' `notElem` (grid !! n) = emptyRows grid h (n + 1) (res ++ [n])
+    | otherwise = emptyRows grid h (n + 1) res
 
-emptyColumns :: [(Int, Int)] -> Int -> Int -> [Int]  -> [Int]
-emptyColumns points w n res
+emptyColumns :: [String] -> Int -> Int -> [Int]  -> [Int]
+emptyColumns grid w n res
     | n >= w = res
-    | not (any (\(r, c) -> c == n) points) = emptyRows points w (n + 1) (res ++ [n])
-    | otherwise = emptyRows points w (n + 1) res
+    | not (any (\r -> r !! n == '#') grid) = emptyColumns grid w (n + 1) (res ++ [n])
+    | otherwise = emptyColumns grid w (n + 1) res
 
-expandSpace :: [(Int, Int)] -> Int -> [(Int, Int)]
-expandSpace points factor =
-    let rs = emptyRows points 140 0 []
-        cs = emptyColumns points 140 0 []
+expandSpace :: [String] -> [(Int, Int)] -> Int -> [(Int, Int)]
+expandSpace grid points factor =
+    let rs = emptyRows grid 140 0 []
+        cs = emptyColumns grid 140 0 []
     in map (\(rowNum, colNum) ->
-                let rowNum' = if any (> rowNum) rs then rowNum + factor else rowNum
-                    colNum' = if any (> colNum) cs then colNum + factor else colNum
+                let rowNum' = rowNum + countGreater rs rowNum * factor
+                    colNum' = colNum + countGreater cs colNum * factor
                 in (rowNum', colNum')) points
 
-rangeCombinations :: Int -> [(Int, Int)] -> [(Int, Int)]
-rangeCombinations d visited =
-    let ends = [(-d,0),(d,0),(0,-d),(0,d)]
-        inner = d - 1
-        rng = [-inner..inner]
-    in
-    ends ++ filter (\(x, y) -> not ((x == 0 && y == 0) || (x == y)) && notElem (x, y) visited) [(x, y) | x <- rng, y <- rng]
+countGreater :: [Int] -> Int -> Int
+countGreater list value = length $ filter (< value) list
 
 comparePoints :: [(Int, Int)] -> [(Int, Int)] -> (Int, Int)
 comparePoints points (pnt:rngPoints)
     | pnt `isTupleInList` points = pnt
     | otherwise = comparePoints points rngPoints
 
-findNearest :: [(Int, Int)] -> [(Int, Int)] -> (Int, Int) -> Int -> (Int, Int) 
-findNearest points visited (row, col) rng
-    | any (\point -> point `isTupleInList` points) inRange = comparePoints points rangePoints
-    | otherwise = findNearest points (rangePoints ++ visited) (row, col) (rng + 1)
-    where 
-        rangePoints = map (\(r, c) -> (row + r, col + c)) rangeCombinations rng visited
+part1 :: [String] -> Int
+part1 grid = sum [distance p1 p2 | (p1:rest) <- tails points, p2 <- rest]
+    where
+        points = expandSpace grid (findGalaxies grid (0,0) []) 1
 
-solve :: [String] -> Int
-solve grid = searchGalaxies grid [] 0
-        where
-        points = expandSpace (findGalaxies grid (0,0) []) 1
-        searchGalaxies :: [(Int, Int)] -> [(Int, Int)] -> Int -> Int
-        searchGalaxies (point:points) visited res
+part2 :: [String] -> Int
+part2 grid = sum [distance p1 p2 | (p1:rest) <- tails points, p2 <- rest]
+    where
+        points = expandSpace grid (findGalaxies grid (0,0) []) 999999
+
+solve :: FilePath -> IO ()
+solve filePath = do
+    grid <- parseFile filePath
+    let answer1 = part1 grid
+    let answer2 = part2 grid
+    print $ show answer1 <> " " <> show answer2
