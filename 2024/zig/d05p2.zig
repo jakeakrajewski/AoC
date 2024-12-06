@@ -82,7 +82,6 @@ pub fn main() !void {
                 //Process Queue
                 while (queue.items.len > 0) {
                     const key = queue.orderedRemove(0);
-                    std.debug.print("\n{} removed", .{key});
                     try ordered_set.append(key);
                     for (0..nums.items.len) |e| {
                         var edges = edge_map.getPtr(nums.items[e]).?;
