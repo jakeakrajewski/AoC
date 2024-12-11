@@ -6,12 +6,12 @@ pub fn parseFile(allocator: *std.mem.Allocator, list: *std.ArrayList([]u8), path
 
     var reader = std.io.bufferedReader(file.reader());
 
-    var line = try reader.reader().readUntilDelimiterOrEofAlloc(allocator.*, '\n', 4096);
+    var line = try reader.reader().readUntilDelimiterOrEofAlloc(allocator.*, '\n', 30000);
 
     while (true) {
         if (line) |l| {
             try list.append(l);
-            line = try reader.reader().readUntilDelimiterOrEofAlloc(allocator.*, '\n', 4096);
+            line = try reader.reader().readUntilDelimiterOrEofAlloc(allocator.*, '\n', 30000);
         } else {
             break;
         }
