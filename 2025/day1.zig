@@ -11,44 +11,31 @@ pub fn main () !void {
     const lines = try list.toOwnedSlice(allocator);
     defer allocator.free(lines);
 
+    const start = std.time.microTimestamp();
     try part1(lines);
     try part2(lines);
+    const stop = std.time.microTimestamp();
+    std.debug.print("{}", .{stop - start});
 }
 
 pub fn part1(lines: [][]const u8) !void {
     var count: usize = 0;
     var pos: usize = 50;
-    var clicks: usize = 0;
-
+    
     for (lines) |line| {
-        std.debug.assert(pos < 100);
-        var num = try std.fmt.parseInt(usize, line[1..],  10);
-        if (num >= 100){
-            clicks += num / 100;
-            std.debug.print("Num: {} Rotations: {} Pos: {}\n", .{ num, num / 100, pos});
-             if (pos == 0) clicks -= 1;
-            num %= 100;
-        }
+        const num = try std.fmt.parseInt(usize, line[1..], 10);
+        const movement = num % 100;
+        
         if (line[0] == 'L') {
-            if (num > pos) {
-             pos = 100 - (num - pos);
-             if (pos != 0) clicks += 1;
-            } else {
-                pos = pos - num;
-            }
+            pos = if (movement > pos) pos + 100 - movement else pos - movement;
         } else {
-            if (pos + num > 99) {
-                pos = num + pos - 100;
-                if (pos != 0) clicks += 1;
-            } else {
-                pos += num;
-            }
+            pos = (pos + movement) % 100;
         }
-
+        
         if (pos == 0) count += 1;
     }
-
-    std.debug.print("{}\n", .{ count });
+    
+    std.debug.print("{}\n", .{count});
 }
 
 pub fn part2(lines: [][]const u8) !void {
